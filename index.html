@@ -8,6 +8,18 @@
 </head>
 <body>
 
+  <div class="filter-buttons">
+    <button onclick="displayRequests(requests)">All Request</button>
+    <button onclick="filterByStatus('Pending')">Pending</button>
+    <button onclick="filterByStatus('In Progress')">In progress</button>
+    <button onclick="filterByStatus('Completed')">All Completed</button>
+    <button onclick="filterByPriority('High')">High Priority</button>
+    <button onclick="filterByPriority('Medium')">Medium Priority</button>
+    <button onclick="filterByPriority('Low')">Low Priority</button>
+
+
+  </div>
+
   <div class="container">
     <h1>Nurse Request Dashboard</h1>
 
