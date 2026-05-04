@@ -14,6 +14,13 @@
     min-height: 100vh;
   }
 
+  .quick-links {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+
   /* ── Page shell ── */
   .page-header {
     background: #fff;
@@ -189,9 +196,12 @@
 </div>
 
 <div class="page-body">
-  <button onclick="showMyAccepted()">My Accepted Tasks</button>
+  <div class="quick-links">
+    <button onclick="showMyAccepted()">My Accepted Tasks</button>
+    <button onclick="showMyCompletedTasks()">Completed Tasks</button>
+    <button onclick="sortByPriority()">Sort By Priority</button>
 
-  <div class="section-row">
+
     <h2>Available Tasks</h2>
     <span class="count">(<span id="pool-count">—</span> unassigned)</span>
     <select id="filterSelect" onchange="applyFilter()">
@@ -239,6 +249,12 @@ const MOCK_IN_PROGRESS = [
   { _id: "t4", type: "non-emergency", room: "Room 410", title: "Blood pressure check", description: "Routine vitals for post-op monitoring.", status: "in-progress", assignedTo: "n1", submittedAt: new Date(now - 25*60000).toISOString() },
 ];
 
+const MOCK_COMPLETED = [
+  { _id: "t5", type: "time-sensitive", room: "Room 411", title: "Gives saline flush", description: "Related to IV.", status: "completed", assignedTo: "n1", submittedAt: new Date(now - 25*60000).toISOString() },
+  { _id: "t6", type: "medical-emergency", room: "Room 412", title: "Rapid response", description: "Someone has fallen", status: "completed", assignedTo: "n1", submittedAt: new Date(now - 25*60000).toISOString() },
+
+];
+
 async function apiFetch(url) {
   const r = await fetch(BASE + url);
   if (!r.ok) throw new Error(r.status);
@@ -268,9 +284,39 @@ function filterAcceptedByType(type)
 }
  function showMyAccepted()
  {
-  document.getElementById("myTasks").scrollIntoView({behavior: "smooth"});
+  document.getElementById("myTasksList").scrollIntoView({behavior: "smooth"});
  }
 
+ function priorityRank(type)
+ {
+  if (type === "medical-emergency") return 1; 
+
+  if (type === "time-sensitive") return 2; 
+
+  if (type === "non-emergency") return 3; 
+
+  return 4;
+ }
+ function sortByPriority()
+ {
+  const sorted = [...allPending].sort((a, b) => priorityRank(a.type) - priorityRank(b.type));
+
+displayTaskPool(sorted);
+ }
+
+ async function showMyCompletedTasks(){
+
+  let completedTasks;
+
+  try {
+    completedTasks = await apiFetch("/tasks?status=completed");
+  } catch(e) {
+    completedTasks = MOCK_COMPLETED;
+  }
+
+  displayTaskPool(completedTasks);
+
+ }
 async function init() {
   try {
     const nurses = await apiFetch("/nurses");
@@ -293,10 +339,8 @@ async function loadPool() {
   applyFilter();
 }
 
-function applyFilter() {
-  const filter = document.getElementById("filterSelect").value;
-  const tasks = filter ? allPending.filter(t => t.type === filter) : allPending;
-  document.getElementById("pool-count").textContent = allPending.length;
+function displayTaskPool(tasks) {
+  document.getElementById("pool-count").textContent = tasks.length;
 
   if (!tasks.length) {
     document.getElementById("taskPool").innerHTML = "<p class='empty'>No Tasks in Pool.</p>";
@@ -306,8 +350,10 @@ function applyFilter() {
   document.getElementById("taskPool").innerHTML = tasks.map(t => {
     const bc = t.type === "medical-emergency" ? "u-emergency"
       : t.type === "time-sensitive" ? "u-timesensitive" : "u-nonemergency";
-    const bl = t.type === "medical-emergency" ? "Medical Emergency"
-      : t.type === "time-sensitive" ? "Time-sensitive" : "non-emergency";
+
+    const bl = t.type === "medical-emergency" ? "High Priority"
+      : t.type === "time-sensitive" ? "Medium Priority" : "Low Priority";
+
     return `
       <div class="task" id="card-${t._id}">
         <div class="task-meta">
@@ -318,18 +364,33 @@ function applyFilter() {
         <h3>${t.title}</h3>
         <p>${t.description}</p>
         <div class="task-footer">
-          <div id="btns-${t._id}">
-            <button onclick="declineTask('${t._id}')">Decline</button>
-            <button class="btn-accept" onclick="acceptTask('${t._id}', '${t.title}', '${t.room}')">Accept</button>
-          </div>
-          <span id="taken-${t._id}" class="already-taken">Task Already Accepted.</span>
-          <span id="banner-${t._id}" class="accepted-banner">✓ Accepted — assigned to you</span>
-        </div>
+
+  <div id="btns-${t._id}">
+
+    <button onclick="declineTask('${t._id}')">Decline</button>
+
+    <button class="btn-accept" onclick="acceptTask('${t._id}', '${t.title}', '${t.room}', '${t.type}')">Accept</button>
+
+  </div>
+
+  <span id="taken-${t._id}" class="already-taken">Task Already Accepted.</span>
+
+  <span id="banner-${t._id}" class="accepted-banner">✓ Accepted — assigned to you</span>
+
+</div>
       </div>`;
   }).join("");
 }
 
-async function acceptTask(id, title, room) {
+function applyFilter() {
+  const filter = document.getElementById("filterSelect").value;
+
+const tasks = filter ? allPending.filter(t => t.type === filter) : allPending;
+
+displayTaskPool(tasks);
+}
+
+async function acceptTask(id, title, room, type) {
   try {
     const r = await fetch(`${BASE}/tasks/${id}/assign`, {
       method: "PATCH",
@@ -344,7 +405,7 @@ async function acceptTask(id, title, room) {
   document.getElementById("card-"+id).classList.add("accepted");
   allPending = allPending.filter(t => t._id !== id);
   document.getElementById("pool-count").textContent = allPending.length;
-  myTasks.push({ _id: id, title, room, acceptedAt: new Date().toISOString() });
+  myTasks.push({ _id: id, title, room, type, acceptedAt: new Date().toISOString() });
   renderMyTasks();
 }
 
