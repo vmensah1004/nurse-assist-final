@@ -189,15 +189,16 @@
 </div>
 
 <div class="page-body">
+  <button onclick="showMyAccepted()">My Accepted Tasks</button>
 
   <div class="section-row">
     <h2>Available Tasks</h2>
     <span class="count">(<span id="pool-count">—</span> unassigned)</span>
     <select id="filterSelect" onchange="applyFilter()">
       <option value="">All Types</option>
-      <option value="medical-emergency">Medical Emergency</option>
-      <option value="time-sensitive">Time-sensitive</option>
-      <option value="non-emergency">Non-Emergency</option>
+      <option value="medical-emergency">(High Priority)Medical Emergency</option>
+      <option value="time-sensitive">(Medium Priority)Time-sensitive</option>
+      <option value="non-emergency">(Low Priority)Non-Emergency</option>
     </select>
   </div>
 
@@ -243,6 +244,32 @@ async function apiFetch(url) {
   if (!r.ok) throw new Error(r.status);
   return r.json();
 }
+
+function showTasks(){
+  document.getElementById("taskPool").scrollIntoView({behavior: "smooth"});
+}
+
+function filterAcceptedByType(type)
+{
+  const filtered = myTasks.filter(task=> task.type == type);
+
+  document.getElementById("my-count").textContent = filtered.length
+
+  document.getElementById("myTasksList").innerHTML = filtered.length ? filtered.map(t =>`
+    <div class="my-task-row">
+    <div class="dot"></div>
+    <div>
+    <strong>${t.title}</strong> - ${t.room}<br>
+    <small>Accepted ${relTime(t.acceptedAt || t.submittedAt)}</small>
+  </div>
+  <span class="chip">In progress</span>
+  </div> `).join("")
+  : "<p class = 'empty'> No taks within filter.</p>";
+}
+ function showMyAccepted()
+ {
+  document.getElementById("myTasks").scrollIntoView({behavior: "smooth"});
+ }
 
 async function init() {
   try {
