@@ -112,12 +112,12 @@
     border-top: 1px solid #f0ebe4;
   }
 
-  /* Urgency badges — kept exactly as requested */
+  /* Urgency badges */
   .u-emergency     { background: #FCEBEB; color: #791F1F; padding: 3px 8px; font-size: 11px; border-radius: 4px; font-family: system-ui, sans-serif; }
   .u-timesensitive { background: #FAEEDA; color: #633806; padding: 3px 8px; font-size: 11px; border-radius: 4px; font-family: system-ui, sans-serif; }
   .u-routine       { background: #EAF3DE; color: #27500A; padding: 3px 8px; font-size: 11px; border-radius: 4px; font-family: system-ui, sans-serif; }
   .u-nonemergency { background: #EAF3DE; color: #27500A; padding: 3px 8px; font-size: 11px; border-radius: 4px; font-family: system-ui, sans-serif; }
-  /* Accept banner — kept exactly as requested */
+  /* Accept banner */
   .accepted-banner {
     background: #E1F5EE;
     color: #0F6E56;
@@ -230,7 +230,7 @@ let currentNurse = null;
 let allPending = [];
 let myTasks = [];
 
-/* ── Mock data (used when server is unreachable) ── */
+/* ── Mock data - used when server is unreachable ── */
 const MOCK_NURSES = [
   { _id: "n1", name: "Adreis A.", role: "RN", floor: "Floor 4", active: true },
   { _id: "n2", name: "Chelsea E.",  role: "RN", floor: "Floor 4", active: false },
@@ -398,7 +398,7 @@ async function acceptTask(id, title, room, type) {
       body: JSON.stringify({ nurseId: currentNurse._id })
     });
     if (!r.ok) throw new Error();
-  } catch(e) { /* mock: continue anyway */ }
+  } catch(e) { /* mock data will continue anyway */ }
 
   document.getElementById("btns-"+id).style.display = "none";
   document.getElementById("banner-"+id).style.display = "inline";
