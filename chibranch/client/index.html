@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>NurseAssist — Administrator</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: Georgia, 'Times New Roman', serif;
+    background: #f7f4ef;
+    color: #2c2825;
+    min-height: 100vh;
+  }
+
+  .page-header {
+    background: #fff;
+    border-bottom: 1px solid #e8e2d9;
+    padding: 14px 32px;
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+  }
+  .page-header h1 { font-size: 17px; font-weight: normal; letter-spacing: 0.01em; }
+  .page-header h1 span { color: #9c8b79; }
+  .page-header nav { font-size: 13px; font-family: system-ui, sans-serif; color: #9c8b79; }
+  .page-header nav a { color: #6b8f78; text-decoration: none; }
+  .page-header nav a:hover { text-decoration: underline; }
+
+  .page-body { max-width: 760px; margin: 0 auto; padding: 32px 24px; }
+
+  /* ── Summary bar ── */
+  .summary-bar {
+    background: #fff;
+    border: 1px solid #e8e2d9;
+    border-radius: 8px;
+    padding: 14px 20px;
+    display: flex;
+    align-items: center;
+    gap: 28px;
+    font-family: system-ui, sans-serif;
+    font-size: 13px;
+    color: #6b5e52;
+    margin-bottom: 28px;
+    flex-wrap: wrap;
+  }
+  .summary-bar .stat strong { font-size: 22px; font-weight: 500; color: #2c2825; display: block; font-family: Georgia, serif; }
+  .summary-bar .divider { width: 1px; height: 32px; background: #e8e2d9; }
+  .summary-bar button { margin-left: auto; }
+
+  /* ── Nav links ── */
+  .section-nav {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 20px;
+    font-family: system-ui, sans-serif;
+    font-size: 13px;
+  }
+  .section-nav a {
+    padding: 6px 14px;
+    border-radius: 5px;
+    color: #9c8b79;
+    text-decoration: none;
+    background: transparent;
+    border: 1px solid transparent;
+  }
+  .section-nav a:hover { background: #fff; border-color: #e8e2d9; color: #2c2825; }
+  .section-nav a.active { background: #fff; border-color: #e8e2d9; color: #2c2825; font-weight: 500; }
+
+  hr.divider { border: none; border-top: 1px solid #e8e2d9; margin: 0 0 20px; }
+
+  /* ── Section headings ── */
+  .section-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 14px;
+  }
+  .section-row h2 {
+    font-size: 14px;
+    font-weight: normal;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #9c8b79;
+    font-family: system-ui, sans-serif;
+  }
+  .section-row .count { font-size: 12px; font-family: system-ui, sans-serif; color: #b8ae9c; }
+
+  /* ── Buttons ── */
+  button {
+    font-family: system-ui, sans-serif;
+    font-size: 12px;
+    padding: 5px 12px;
+    border-radius: 5px;
+    cursor: pointer;
+    border: 1px solid #ddd6cc;
+    background: #fff;
+    color: #2c2825;
+  }
+  button:hover { background: #f7f4ef; }
+
+  /* ── Urgency badges ── */
+  .u-emergency     { background: #FCEBEB; color: #791F1F; padding: 3px 8px; font-size: 11px; border-radius: 4px; font-family: system-ui, sans-serif; }
+  .u-timesensitive { background: #FAEEDA; color: #633806; padding: 3px 8px; font-size: 11px; border-radius: 4px; font-family: system-ui, sans-serif; }
+  .u-routine       { background: #EAF3DE; color: #27500A; padding: 3px 8px; font-size: 11px; border-radius: 4px; font-family: system-ui, sans-serif; }
+  .u-nonemergency { background: #EAF3DE; color: #27500A; padding: 3px 8px; font-size: 11px; border-radius: 4px; font-family: system-ui, sans-serif; }
+  /* ── Workload nurse rows ── */
+  .nurse-block {
+    background: #fff;
+    border: 1px solid #e8e2d9;
+    border-radius: 8px;
+    margin-bottom: 8px;
+    overflow: hidden;
+  }
+  .nurse-block.busy { border-left: 3px solid #a8c5b5; }
+  .nurse-block.idle { border-left: 3px solid #ddd6cc; }
+  .nurse-block summary {
+    padding: 12px 16px;
+    cursor: pointer;
+    font-family: system-ui, sans-serif;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    list-style: none;
+    user-select: none;
+  }
+  .nurse-block summary::-webkit-details-marker { display: none; }
+  .nurse-block summary .name { font-weight: 500; color: #2c2825; }
+  .nurse-block summary .role { color: #9c8b79; font-size: 12px; }
+  .nurse-block summary .task-badge {
+    margin-left: auto;
+    font-size: 11px;
+    border-radius: 4px;
+    padding: 2px 8px;
+  }
+  .task-badge.busy { background: #eef6f1; color: #1a5c3a; }
+  .task-badge.idle { background: #f3f0eb; color: #9c8b79; }
+
+  .nurse-tasks {
+    border-top: 1px solid #f0ebe4;
+    background: #faf8f5;
+    padding: 0 16px;
+  }
+  .task-row {
+    display: grid;
+    grid-template-columns: 90px 1fr auto auto;
+    gap: 12px;
+    align-items: center;
+    padding: 9px 0;
+    border-bottom: 1px solid #f0ebe4;
+    font-family: system-ui, sans-serif;
+    font-size: 13px;
+  }
+  .task-row:last-child { border-bottom: none; }
+  .task-row .room { font-size: 12px; color: #9c8b79; }
+  .task-row .when { font-size: 11px; color: #b8ae9c; }
+  .idle-msg { padding: 10px 0; font-size: 13px; color: #b8ae9c; font-style: italic; font-family: system-ui, sans-serif; }
+
+  /* ── Completed table ── */
+  table { width: 100%; border-collapse: collapse; font-family: system-ui, sans-serif; }
+  th { font-size: 11px; font-weight: 500; color: #9c8b79; text-transform: uppercase; letter-spacing: 0.05em; padding: 8px 12px; border-bottom: 1px solid #e8e2d9; text-align: left; }
+  td { font-size: 13px; padding: 10px 12px; border-bottom: 1px solid #f0ebe4; color: #2c2825; vertical-align: middle; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: #faf8f5; }
+  .table-wrap { background: #fff; border: 1px solid #e8e2d9; border-radius: 8px; overflow: hidden; }
+  .td-sub { font-size: 11px; color: #9c8b79; margin-top: 2px; }
+  .res-chip { font-size: 11px; padding: 2px 8px; border-radius: 4px; }
+  .res-fast { background: #EAF3DE; color: #27500A; }
+  .res-ok   { background: #f3f0eb; color: #6b5e52; }
+  .res-slow { background: #FCEBEB; color: #791F1F; }
+
+  /* ── Pending pool ── */
+  .pending-card {
+    background: #fff;
+    border: 1px solid #e8e2d9;
+    border-radius: 8px;
+    padding: 14px 16px;
+    margin-bottom: 8px;
+    font-family: system-ui, sans-serif;
+  }
+  .pending-card.p-emergency    { border-left: 3px solid #e8a0a0; }
+  .pending-card.p-timesensitive{ border-left: 3px solid #e8c87a; }
+  .pending-card.p-routine      { border-left: 3px solid #a8c5b5; }
+  .pending-top { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+  .pending-top .room { font-size: 12px; color: #9c8b79; }
+  .pending-top .when { font-size: 11px; color: #b8ae9c; margin-left: auto; }
+  .pending-card strong { font-size: 13px; font-weight: 500; display: block; margin-bottom: 3px; color: #2c2825; }
+  .pending-card p { font-size: 12px; color: #6b5e52; line-height: 1.5; }
+
+  .empty { font-size: 13px; color: #b8ae9c; font-family: system-ui, sans-serif; padding: 8px 0; }
+</style>
+</head>
+<body>
+
+<div class="page-header">
+  <h1>Nurse<span>Assist</span> &nbsp;—&nbsp; Administrator</h1>
+  <nav>UAlbany General Hospital &nbsp;·&nbsp; <a href="nurse.html">Nurse View →</a></nav>
+</div>
+
+<div class="page-body">
+
+  <div class="summary-bar">
+    <div class="stat"><strong id="s-pending">—</strong>Pending</div>
+    <div class="divider"></div>
+    <div class="stat"><strong id="s-active">—</strong>In progress</div>
+    <div class="divider"></div>
+    <div class="stat"><strong id="s-done">—</strong>Completed</div>
+    <div class="divider"></div>
+    <div class="stat"><strong id="s-staff">—</strong>Active staff</div>
+    <button onclick="loadSummary()">↺ Refresh</button>
+  </div>
+
+  <div class="section-nav">
+    <a href="#workload" class="active" id="tab-workload" onclick="showSection('workload');return false;">Staff workload</a>
+    <a href="#completed" id="tab-completed" onclick="showSection('completed');return false;">Completed tasks</a>
+    <a href="#pending" id="tab-pending" onclick="showSection('pending');return false;">Pending pool</a>
+  </div>
+  <hr class="divider">
+
+  <!-- Staff workload -->
+  <div id="sec-workload">
+    <div class="section-row">
+      <h2>Staff Workload</h2>
+      <span class="count" id="busy-note"></span>
+      <button style="margin-left:auto" onclick="loadWorkload()">↺ Refresh</button>
+    </div>
+    <div id="nurseList"><p class="empty">Loading…</p></div>
+  </div>
+
+  <!-- Completed tasks -->
+  <div id="sec-completed" style="display:none">
+    <div class="section-row">
+      <h2>Completed Tasks</h2>
+      <button style="margin-left:auto" onclick="loadCompleted()">↺ Refresh</button>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Room</th><th>Task</th><th>Type</th><th>Completed by</th><th>Resolved in</th><th>Time</th></tr></thead>
+        <tbody id="completedBody"><tr><td colspan="6"><p class="empty" style="padding:12px">Loading…</p></td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Pending pool -->
+  <div id="sec-pending" style="display:none">
+    <div class="section-row">
+      <h2>Pending Pool</h2>
+      <span class="count" id="pending-note"></span>
+      <button style="margin-left:auto" onclick="loadPending()">↺ Refresh</button>
+    </div>
+    <div id="pendingList"><p class="empty">Loading…</p></div>
+  </div>
+
+</div>
+
+<script>
+const BASE = "/api";
+
+/* ── Mock data ── */
+const now = Date.now();
+const MOCK_SUMMARY = { pending: 3, inProgress: 4, completed: 5, totalNurses: 4 };
+const MOCK_WORKLOAD = [
+  { _id: "n1", nurseName: "Adreis A.", nurseRole: "RN", taskCount: 1, activeTasks: [{ taskId:"t4", room:"Room 410", title:"Blood pressure check", type:"non-emergency", submittedAt: new Date(now-25*60000).toISOString() }] },
+  { _id: "n3", nurseName: "Vince M.",  nurseRole: "NA", taskCount: 1, activeTasks: [{ taskId:"t6", room:"Room 407", title:"Ambulation assistance", type:"non-emergency", submittedAt: new Date(now-8*60000).toISOString() }] },
+  { _id: "n4", nurseName: "Chelsea E.", nurseRole: "RN", taskCount: 0, activeTasks: [] },
+];
+
+const MOCK_COMPLETED = [
+  { room:"Room 401", title:"Morning vitals",        type:"non-emergency",        description:"BP 118/74, HR 72, Temp 98.4°F. All within normal range.", completedBy:"Adreis A.", nurseRole:"RN", resolutionMins:20, completedAt: new Date(now-100*60000).toISOString() },
+  { room:"Room 405", title:"Antibiotic administration", type:"time-sensitive", description:"IV vancomycin administered. No adverse reactions.",       completedBy:"Chelsea E.",  nurseRole:"RN", resolutionMins:20, completedAt: new Date(now-160*60000).toISOString() },
+  { room:"Room 409", title:"Dietary intake documentation", type:"routine",   description:"Patient ate 80% of breakfast. Fluid intake 400ml.",        completedBy:"Dylan W.",   nurseRole:"NA", resolutionMins:15, completedAt: new Date(now-185*60000).toISOString() },
+  { room:"Room 414", title:"Rapid response — fall risk",   type:"medical-emergency", description:"Patient found attempting to get OOB unassisted. Bed alarm reset.", completedBy:"Vince M.", nurseRole:"NA", resolutionMins:10, completedAt: new Date(now-230*60000).toISOString() },
+  { room:"Room 402", title:"Discharge instructions",       type:"non-emergency",   description:"Patient educated on wound care and follow-up schedule.",   completedBy:"Adreis A.", nurseRole:"RN", resolutionMins:30, completedAt: new Date(now-270*60000).toISOString() },
+];
+const MOCK_PENDING = [
+  { _id:"t1", type:"time-sensitive",    room:"Room 412", title:"Medication administration",    description:"Patient requires 2pm insulin dose. Chart updated. No known allergies.", submittedAt: new Date(now-2*60000).toISOString() },
+  { _id:"t2", type:"non-emergency",           room:"Room 408", title:"Fresh water and linen change", description:"Patient requests fresh water pitcher and linen replacement. Non-urgent.", submittedAt: new Date(now-11*60000).toISOString() },
+  { _id:"t3", type:"medical-emergency", room:"Room 415", title:"Patient reporting chest pain",  description:"Acute chest tightness, rating 7/10. History of cardiac issues. Requires immediate assessment.", submittedAt: new Date(now-1*60000).toISOString() },
+];
+
+async function apiFetch(url) {
+  const r = await fetch(BASE + url);
+  if (!r.ok) throw new Error(r.status);
+  return r.json();
+}
+
+/* ── Section switching ── */
+function showSection(name) {
+  ["workload","completed","pending"].forEach(s => {
+    document.getElementById("sec-"+s).style.display = s === name ? "" : "none";
+    document.getElementById("tab-"+s).classList.toggle("active", s === name);
+  });
+  if (name === "workload") loadWorkload();
+  if (name === "completed") loadCompleted();
+  if (name === "pending") loadPending();
+}
+
+/* ── Summary ── */
+async function loadSummary() {
+  let d;
+  try { d = await apiFetch("/admin/summary"); } catch(e) { d = MOCK_SUMMARY; }
+  document.getElementById("s-pending").textContent = d.pending   ?? "—";
+  document.getElementById("s-active").textContent  = d.inProgress ?? "—";
+  document.getElementById("s-done").textContent    = d.completed  ?? "—";
+  document.getElementById("s-staff").textContent   = d.totalNurses ?? "—";
+}
+
+/* ── Helpers ── */
+function badge(type) {
+  const c = type==="medical-emergency"?"u-emergency":type==="time-sensitive"?"u-timesensitive":"u-nonemergency";
+  const l = type==="medical-emergency"?"Medical emergency":type==="time-sensitive"?"Time-sensitive":"Non-Emergency";
+  return `<span class="${c}">${l}</span>`;
+}
+function rel(d) {
+  if (!d) return "—";
+  const m = Math.floor((Date.now()-new Date(d))/60000);
+  if (m<1) return "just now"; if (m<60) return `${m}m ago`;
+  return `${Math.floor(m/60)}h ${m%60}m ago`;
+}
+function fmt(d) {
+  if (!d) return "—";
+  return new Date(d).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"});
+}
+
+/* ── Workload ── */
+async function loadWorkload() {
+  const el = document.getElementById("nurseList");
+  el.innerHTML = "<p class='empty'>Loading…</p>";
+  let nurses;
+  try { nurses = await apiFetch("/admin/workload"); } catch(e) { nurses = MOCK_WORKLOAD; }
+
+  const busy = nurses.filter(n=>n.taskCount>0).length;
+  document.getElementById("busy-note").textContent =
+    `${busy} busy · ${nurses.length-busy} idle`;
+
+  el.innerHTML = nurses.map(n => {
+    const has = n.taskCount > 0;
+    const rows = has
+      ? n.activeTasks.map(t => `
+          <div class="task-row">
+            <span class="room">${t.room}</span>
+            <span>${t.title}</span>
+            <span>${badge(t.type)}</span>
+            <span class="when">${rel(t.submittedAt)}</span>
+          </div>`).join("")
+      : `<div class="idle-msg">No active tasks</div>`;
+
+    return `
+      <details class="nurse-block ${has?'busy':'idle'}">
+        <summary>
+          <span class="name">${n.nurseName||"Unknown"}</span>
+          <span class="role">${n.nurseRole||"—"}</span>
+          <span class="task-badge ${has?'busy':'idle'}">${has?`${n.taskCount} active`:"Idle"}</span>
+        </summary>
+        <div class="nurse-tasks">${rows}</div>
+      </details>`;
+  }).join("");
+}
+
+/* ── Completed ── */
+async function loadCompleted() {
+  const tb = document.getElementById("completedBody");
+  tb.innerHTML = "<tr><td colspan='6'><p class='empty' style='padding:10px'>Loading…</p></td></tr>";
+  let tasks;
+  try { tasks = await apiFetch("/admin/completed"); } catch(e) { tasks = MOCK_COMPLETED; }
+  if (!tasks.length) { tb.innerHTML = "<tr><td colspan='6'><p class='empty' style='padding:10px'>No completed tasks yet.</p></td></tr>"; return; }
+  tb.innerHTML = tasks.map(t => {
+    const m = t.resolutionMins??0;
+    const rc = m<=15?"res-fast":m>45?"res-slow":"res-ok";
+    return `<tr>
+      <td style="color:#9c8b79;font-size:12px">${t.room}</td>
+      <td><div>${t.title}</div><div class="td-sub">${(t.description||"").slice(0,60)}…</div></td>
+      <td>${badge(t.type)}</td>
+      <td><div>${t.completedBy}</div><div class="td-sub">${t.nurseRole}</div></td>
+      <td><span class="res-chip ${rc}">${m<1?"<1 min":`${m} min`}</span></td>
+      <td style="color:#9c8b79;font-size:12px">${fmt(t.completedAt)}</td>
+    </tr>`;
+  }).join("");
+}
+
+/* ── Pending ── */
+async function loadPending() {
+  const el = document.getElementById("pendingList");
+  el.innerHTML = "<p class='empty'>Loading…</p>";
+  let tasks;
+  try { tasks = await apiFetch("/tasks?status=pending"); } catch(e) { tasks = MOCK_PENDING; }
+  document.getElementById("pending-note").textContent = `${tasks.length} unassigned`;
+  if (!tasks.length) { el.innerHTML = "<p class='empty'>No pending tasks — all clear.</p>"; return; }
+  el.innerHTML = tasks.map(t => {
+    const ec = t.type==="medical-emergency"?"p-emergency":t.type==="time-sensitive"?"p-timesensitive":"p-routine";
+    return `
+      <div class="pending-card ${ec}">
+        <div class="pending-top">
+          ${badge(t.type)}
+          <span class="room">${t.room}</span>
+          <span class="when">${rel(t.submittedAt)}</span>
+        </div>
+        <strong>${t.title}</strong>
+        <p>${t.description}</p>
+      </div>`;
+  }).join("");
+}
+
+loadSummary();
+loadWorkload();
+setInterval(loadSummary, 30000);
+</script>
+</body>
+</html>

@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>NurseAssist — Task Pool</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: Georgia, 'Times New Roman', serif;
+    background: #f7f4ef;
+    color: #2c2825;
+    min-height: 100vh;
+  }
+
+  /* ── Page shell ── */
+  .page-header {
+    background: #fff;
+    border-bottom: 1px solid #e8e2d9;
+    padding: 14px 32px;
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+  }
+  .page-header h1 {
+    font-size: 17px;
+    font-weight: normal;
+    letter-spacing: 0.01em;
+    color: #2c2825;
+  }
+  .page-header h1 span { color: #9c8b79; }
+  #nurseLabel {
+    font-size: 13px;
+    color: #9c8b79;
+    font-family: system-ui, sans-serif;
+  }
+
+  .page-body { max-width: 680px; margin: 0 auto; padding: 32px 24px; }
+
+  /* ── Section headings ── */
+  .section-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  .section-row h2 {
+    font-size: 14px;
+    font-weight: normal;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #9c8b79;
+    font-family: system-ui, sans-serif;
+  }
+  .section-row .count {
+    font-size: 12px;
+    font-family: system-ui, sans-serif;
+    color: #9c8b79;
+  }
+  .section-row select {
+    margin-left: auto;
+    font-size: 12px;
+    font-family: system-ui, sans-serif;
+    border: 1px solid #ddd6cc;
+    background: #fff;
+    color: #2c2825;
+    padding: 4px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+
+  hr.divider { border: none; border-top: 1px solid #e8e2d9; margin: 28px 0; }
+
+  /* ── Task cards ── */
+  .task {
+    background: #fff;
+    border: 1px solid #e8e2d9;
+    border-radius: 8px;
+    padding: 16px 18px;
+    margin-bottom: 10px;
+  }
+  .task.accepted { border-color: #a8c5b5; }
+  .task.declined { opacity: 0.45; pointer-events: none; }
+
+  .task-meta {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+    font-family: system-ui, sans-serif;
+  }
+  .task-room { font-size: 12px; color: #9c8b79; }
+  .task-time { font-size: 12px; color: #b8ae9c; margin-left: auto; }
+
+  .task h3 { font-size: 15px; font-weight: normal; margin-bottom: 6px; color: #2c2825; }
+  .task p  { font-size: 13px; color: #6b5e52; line-height: 1.55; font-family: system-ui, sans-serif; }
+
+  .task-footer {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 1px solid #f0ebe4;
+  }
+
+  /* Urgency badges — kept exactly as requested */
+  .u-emergency     { background: #FCEBEB; color: #791F1F; padding: 3px 8px; font-size: 11px; border-radius: 4px; font-family: system-ui, sans-serif; }
+  .u-timesensitive { background: #FAEEDA; color: #633806; padding: 3px 8px; font-size: 11px; border-radius: 4px; font-family: system-ui, sans-serif; }
+  .u-routine       { background: #EAF3DE; color: #27500A; padding: 3px 8px; font-size: 11px; border-radius: 4px; font-family: system-ui, sans-serif; }
+  .u-nonemergency { background: #EAF3DE; color: #27500A; padding: 3px 8px; font-size: 11px; border-radius: 4px; font-family: system-ui, sans-serif; }
+  /* Accept banner — kept exactly as requested */
+  .accepted-banner {
+    background: #E1F5EE;
+    color: #0F6E56;
+    padding: 5px 12px;
+    font-size: 13px;
+    border-radius: 4px;
+    display: none;
+    font-family: system-ui, sans-serif;
+  }
+
+  .already-taken {
+    font-size: 12px;
+    color: #791F1F;
+    font-family: system-ui, sans-serif;
+    display: none;
+  }
+
+  /* Buttons */
+  button {
+    font-family: system-ui, sans-serif;
+    font-size: 13px;
+    padding: 6px 14px;
+    border-radius: 5px;
+    cursor: pointer;
+    border: 1px solid #ddd6cc;
+    background: #fff;
+    color: #2c2825;
+    transition: background 0.1s;
+  }
+  button:hover { background: #f7f4ef; }
+  button.btn-accept {
+    border-color: #a8c5b5;
+    background: #eef6f1;
+    color: #1a5c3a;
+  }
+  button.btn-accept:hover { background: #daeee5; }
+
+  /* ── My tasks list ── */
+  .my-task-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid #f0ebe4;
+    font-family: system-ui, sans-serif;
+  }
+  .my-task-row:last-child { border-bottom: none; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: #a8c5b5; flex-shrink: 0; }
+  .my-task-row strong { font-size: 13px; color: #2c2825; font-weight: 500; }
+  .my-task-row small  { font-size: 12px; color: #9c8b79; }
+  .my-task-row .chip  {
+    margin-left: auto;
+    font-size: 11px;
+    background: #eef6f1;
+    color: #1a5c3a;
+    border-radius: 4px;
+    padding: 2px 8px;
+  }
+
+  .empty { font-size: 13px; color: #b8ae9c; font-family: system-ui, sans-serif; padding: 8px 0; }
+</style>
+</head>
+<body>
+
+<div class="page-header">
+  <h1>Nurse<span>Assist</span> &nbsp;—&nbsp; Task Pool</h1>
+  <span id="nurseLabel"></span>
+</div>
+
+<div class="page-header"></div>
+  <h1>Nurse<span>Assist</span> &nbsp;—&nbsp; Task Pool</h1>
+  <div style="display:flex; align-items:center; gap:20px;">
+    <a href="index.html" style="font-size:13px; font-family:system-ui,sans-serif; color:#6b8f78; text-decoration:none;">Admin View →</a>
+    <span id="nurseLabel"></span>
+  </div>
+</div>
+
+<div class="page-body">
+
+  <div class="section-row">
+    <h2>Available Tasks</h2>
+    <span class="count">(<span id="pool-count">—</span> unassigned)</span>
+    <select id="filterSelect" onchange="applyFilter()">
+      <option value="">All Types</option>
+      <option value="medical-emergency">Medical Emergency</option>
+      <option value="time-sensitive">Time-sensitive</option>
+      <option value="non-emergency">Non-Emergency</option>
+    </select>
+  </div>
+
+  <div id="taskPool"><p class="empty">Loading Tasks…</p></div>
+
+  <hr class="divider">
+
+  <div class="section-row">
+    <h2>My Accepted Tasks</h2>
+    <span class="count">(<span id="my-count">0</span> in progress)</span>
+  </div>
+  <div id="myTasksList"><p class="empty">None yet.</p></div>
+
+</div>
+
+<script>
+const BASE = "/api";
+let currentNurse = null;
+let allPending = [];
+let myTasks = [];
+
+/* ── Mock data (used when server is unreachable) ── */
+const MOCK_NURSES = [
+  { _id: "n1", name: "Adreis A.", role: "RN", floor: "Floor 4", active: true },
+  { _id: "n2", name: "Chelsea E.",  role: "RN", floor: "Floor 4", active: false },
+  { _id: "n3", name: "Vince M.",   role: "NA", floor: "Floor 4", active: true },
+  { _id: "n4", name: "Chinwe O.",   role: "Admin", floor: "Floor 4", active: true },
+  { _id: "n5", name: "Dylan W.",   role: "NA", floor: "Floor 4", active: false },
+
+];
+const now = Date.now();
+const MOCK_PENDING = [
+  { _id: "t1", type: "time-sensitive",    room: "Room 412", title: "Medication administration",    description: "Patient requires 2pm insulin dose. Chart updated. Patient has no known allergies on file.", status: "pending", assignedTo: null, submittedAt: new Date(now - 2*60000).toISOString() },
+  { _id: "t2", type: "non-emergency",           room: "Room 408", title: "Fresh water and linen change", description: "Patient requests fresh water pitcher and linen replacement. Non-urgent, comfortable at present.", status: "pending", assignedTo: null, submittedAt: new Date(now - 11*60000).toISOString() },
+  { _id: "t3", type: "medical-emergency", room: "Room 415", title: "Patient reporting chest pain",  description: "Patient reporting acute chest tightness, rating 7/10. History of cardiac issues on file. Requires nurse assessment immediately.", status: "pending", assignedTo: null, submittedAt: new Date(now - 1*60000).toISOString() },
+];
+const MOCK_IN_PROGRESS = [
+  { _id: "t4", type: "non-emergency", room: "Room 410", title: "Blood pressure check", description: "Routine vitals for post-op monitoring.", status: "in-progress", assignedTo: "n1", submittedAt: new Date(now - 25*60000).toISOString() },
+];
+
+async function apiFetch(url) {
+  const r = await fetch(BASE + url);
+  if (!r.ok) throw new Error(r.status);
+  return r.json();
+}
+
+async function init() {
+  try {
+    const nurses = await apiFetch("/nurses");
+    currentNurse = nurses.find(n => n.name.startsWith("Chelsea E.")) || nurses[1];
+  } catch(e) {
+    currentNurse = MOCK_NURSES[1];
+  }
+  document.getElementById("nurseLabel").textContent =
+    `${currentNurse.name} — ${currentNurse.role}`;
+  await loadPool();
+  await loadMyTasks();
+}
+
+async function loadPool() {
+  try {
+    allPending = await apiFetch("/tasks?status=pending");
+  } catch(e) {
+    allPending = [...MOCK_PENDING];
+  }
+  applyFilter();
+}
+
+function applyFilter() {
+  const filter = document.getElementById("filterSelect").value;
+  const tasks = filter ? allPending.filter(t => t.type === filter) : allPending;
+  document.getElementById("pool-count").textContent = allPending.length;
+
+  if (!tasks.length) {
+    document.getElementById("taskPool").innerHTML = "<p class='empty'>No Tasks in Pool.</p>";
+    return;
+  }
+
+  document.getElementById("taskPool").innerHTML = tasks.map(t => {
+    const bc = t.type === "medical-emergency" ? "u-emergency"
+      : t.type === "time-sensitive" ? "u-timesensitive" : "u-nonemergency";
+    const bl = t.type === "medical-emergency" ? "Medical Emergency"
+      : t.type === "time-sensitive" ? "Time-sensitive" : "non-emergency";
+    return `
+      <div class="task" id="card-${t._id}">
+        <div class="task-meta">
+          <span class="${bc}">${bl}</span>
+          <span class="task-room">${t.room}</span>
+          <span class="task-time">${relTime(t.submittedAt)}</span>
+        </div>
+        <h3>${t.title}</h3>
+        <p>${t.description}</p>
+        <div class="task-footer">
+          <div id="btns-${t._id}">
+            <button onclick="declineTask('${t._id}')">Decline</button>
+            <button class="btn-accept" onclick="acceptTask('${t._id}', '${t.title}', '${t.room}')">Accept</button>
+          </div>
+          <span id="taken-${t._id}" class="already-taken">Task Already Accepted.</span>
+          <span id="banner-${t._id}" class="accepted-banner">✓ Accepted — assigned to you</span>
+        </div>
+      </div>`;
+  }).join("");
+}
+
+async function acceptTask(id, title, room) {
+  try {
+    const r = await fetch(`${BASE}/tasks/${id}/assign`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ nurseId: currentNurse._id })
+    });
+    if (!r.ok) throw new Error();
+  } catch(e) { /* mock: continue anyway */ }
+
+  document.getElementById("btns-"+id).style.display = "none";
+  document.getElementById("banner-"+id).style.display = "inline";
+  document.getElementById("card-"+id).classList.add("accepted");
+  allPending = allPending.filter(t => t._id !== id);
+  document.getElementById("pool-count").textContent = allPending.length;
+  myTasks.push({ _id: id, title, room, acceptedAt: new Date().toISOString() });
+  renderMyTasks();
+}
+
+function declineTask(id) {
+  document.getElementById("taken-"+id).style.display = "inline";
+  document.getElementById("btns-"+id).style.display = "none";
+  document.getElementById("card-"+id).classList.add("declined");
+}
+
+async function loadMyTasks() {
+  try {
+    const tasks = await apiFetch("/tasks?status=in-progress");
+    myTasks = tasks.filter(t => String(t.assignedTo) === String(currentNurse?._id));
+  } catch(e) {
+    myTasks = MOCK_IN_PROGRESS.filter(t => t.assignedTo === currentNurse._id);
+  }
+  renderMyTasks();
+}
+
+function renderMyTasks() {
+  document.getElementById("my-count").textContent = myTasks.length;
+  document.getElementById("myTasksList").innerHTML = myTasks.length
+    ? myTasks.map(t => `
+        <div class="my-task-row">
+          <div class="dot"></div>
+          <div>
+            <strong>${t.title}</strong> — ${t.room}<br>
+            <small>Accepted ${relTime(t.acceptedAt || t.submittedAt)}</small>
+          </div>
+          <span class="chip">In progress</span>
+        </div>`).join("")
+    : "<p class='empty'>None yet.</p>";
+}
+
+function relTime(d) {
+  if (!d) return "";
+  const m = Math.floor((Date.now() - new Date(d)) / 60000);
+  if (m < 1) return "just now";
+  if (m < 60) return `${m}m ago`;
+  return `${Math.floor(m/60)}h ago`;
+}
+
+init();
+setInterval(loadPool, 20000);
+</script>
+</body>
+</html>
