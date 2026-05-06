@@ -9,17 +9,14 @@ const { getDb } = require("../db");
 const router = Router();
 
 // GET /api/admin/workload
-// Returns each nurse with their current in-progress and pending tasks.
+// Returns each nurse with their current in-progress tasks.
 // Used for the "Who is busy?" view.
 router.get("/workload", async (req, res) => {
   try {
     const db = getDb();
 
-    // Aggregate: group tasks assigned to each nurse that are NOT completed
     const pipeline = [
-      // Only active, in-progress tasks
       { $match: { status: "in-progress" } },
-      // Join nurse data
       {
         $lookup: {
           from: "nurses",
@@ -28,8 +25,8 @@ router.get("/workload", async (req, res) => {
           as: "nurse",
         },
       },
-      { $unwind: { path: "$nurse", preserveNullAndEmpty: true } },
-      // Group by nurse
+      // Fixed: preserveNullAndEmptyArrays (was preserveNullAndEmpty in chibranch — invalid key)
+      { $unwind: { path: "$nurse", preserveNullAndEmptyArrays: true } },
       {
         $group: {
           _id: "$nurse._id",
@@ -52,7 +49,6 @@ router.get("/workload", async (req, res) => {
 
     const workload = await db.collection("tasks").aggregate(pipeline).toArray();
 
-    //Also fetch nurses with ZERO active tasks (idle nurses)
     const busyIds = workload
       .map((w) => w._id)
       .filter(Boolean)
@@ -79,9 +75,9 @@ router.get("/workload", async (req, res) => {
   }
 });
 
-
-//returns all completed tasks with the name of who completed them.
-//used for the "Completed tasks" history view
+// GET /api/admin/completed
+// Returns all completed tasks with the name of who completed them.
+// Used for the "Completed tasks" history view.
 router.get("/completed", async (req, res) => {
   try {
     const db = getDb();
@@ -97,7 +93,8 @@ router.get("/completed", async (req, res) => {
         },
       },
       {
-        $unwind: { path: "$nurse", preserveNullAndEmpty: true },
+        // Fixed: preserveNullAndEmptyArrays (was preserveNullAndEmpty in chibranch — invalid key)
+        $unwind: { path: "$nurse", preserveNullAndEmptyArrays: true },
       },
       {
         $project: {
@@ -109,7 +106,6 @@ router.get("/completed", async (req, res) => {
           completedAt: 1,
           completedBy: { $ifNull: ["$nurse.name", "Unassigned"] },
           nurseRole: { $ifNull: ["$nurse.role", "—"] },
-          // Resolution time in minutes
           resolutionMins: {
             $round: [
               {

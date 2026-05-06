@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>NurseAssist — Patient</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: Georgia, 'Times New Roman', serif;
+    background: #f7f4ef;
+    color: #2c2825;
+    min-height: 100vh;
+  }
+
+  .page-header {
+    background: #fff;
+    border-bottom: 1px solid #e8e2d9;
+    padding: 14px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  .page-header h1 { font-size: 17px; font-weight: normal; letter-spacing: 0.01em; }
+  .page-header h1 span { color: #9c8b79; }
+  .page-header nav {
+    font-size: 13px;
+    font-family: system-ui, sans-serif;
+    color: #9c8b79;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  .page-header nav a { color: #6b8f78; text-decoration: none; }
+  .page-header nav a:hover { text-decoration: underline; }
+  
+
+  /* ── Sign-up step ── */
+  #step-signup {
+    background: #fff;
+    border: 1px solid #e8e2d9;
+    border-radius: 16px;
+    padding: 32px;
+    max-width: 480px;
+    margin: 0 auto 24px;
+    box-shadow: 0 8px 28px rgba(74,52,34,.07);
+  }
+  #step-signup h2 { font-size: 22px; font-weight: normal; margin-bottom: 8px; color: #3d2f25; }
+  #step-signup p  { font-size: 14px; color: #7d6d5f; margin-bottom: 20px; line-height: 1.5; }
+
+  /* ── Request step ── */
+  #step-request { display: none; }
+
+  .hero {
+    background: #fff;
+    border: 1px solid #e8e2d9;
+    border-radius: 20px;
+    padding: 24px 28px;
+    box-shadow: 0 8px 28px rgba(74,52,34,.06);
+    margin-bottom: 18px;
+  }
+  .hero h1 { color: #3d2f25; font-size: clamp(22px, 4vw, 36px); line-height: 1.1; margin-bottom: 6px; }
+  .hero .lead { color: #7d6d5f; font-size: 15px; line-height: 1.5; }
+  .hero .patient-tag {
+    display: inline-block;
+    margin-top: 10px;
+    font-family: system-ui, sans-serif;
+    font-size: 13px;
+    background: #eef6f1;
+    color: #1a5c3a;
+    padding: 4px 12px;
+    border-radius: 20px;
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: 0.85fr 1.15fr;
+    gap: 18px;
+  }
+
+  .card {
+    background: #fff;
+    border: 1px solid #e8e2d9;
+    border-radius: 16px;
+    box-shadow: 0 8px 24px rgba(74,52,34,.05);
+    overflow: hidden;
+  }
+  .card-body { padding: 20px; }
+  .section-title {
+    color: #9c8b79; font-size: 12px; font-weight: 700;
+    letter-spacing: .08em; text-transform: uppercase;
+    margin-bottom: 14px; font-family: system-ui, sans-serif;
+  }
+
+  label { display: block; font-size: 13px; color: #6f5e50; margin-bottom: 6px; font-weight: 600; font-family: system-ui, sans-serif; }
+
+  select, textarea, input[type="text"] {
+    width: 100%;
+    border: 1px solid #dfd5c8;
+    background: #fffdfb;
+    border-radius: 10px;
+    color: #2c2825;
+    font: inherit;
+    padding: 10px 12px;
+    outline: none;
+    font-size: 14px;
+  }
+  textarea { min-height: 88px; resize: vertical; }
+  select:focus, textarea:focus, input:focus {
+    border-color: #b8875f;
+    box-shadow: 0 0 0 3px rgba(184,135,95,.13);
+  }
+  .field { margin-bottom: 14px; }
+
+  .status-box {
+    border-radius: 12px; padding: 14px;
+    background: #f7f4ef; border: 1px solid #e8e2d9;
+    color: #6f5e50; line-height: 1.45;
+    font-family: system-ui, sans-serif; font-size: 13px;
+    margin-top: 14px;
+  }
+  .status-box strong { color: #3d2f25; }
+
+  .actions { display: grid; grid-template-columns: 1fr; gap: 10px; }
+
+  /* Request buttons */
+  .req-btn {
+    border: 0; border-radius: 12px; padding: 14px 16px;
+    font: inherit; cursor: pointer; font-weight: 700;
+    transition: transform .12s, box-shadow .12s, opacity .12s;
+    text-align: left; color: #fff;
+    display: flex; flex-direction: column; gap: 3px;
+  }
+  .req-btn:hover { transform: translateY(-1px); box-shadow: 0 10px 22px rgba(74,52,34,.14); }
+  .req-btn:disabled { opacity: .5; cursor: not-allowed; transform: none; box-shadow: none; }
+  .req-btn .hint { font-size: 12px; font-weight: 400; opacity: .88; }
+  .routine   { background: linear-gradient(135deg, #6f8f72, #93ad79); }
+  .timed     { background: linear-gradient(135deg, #b8875f, #d4a76f); }
+  .emergency { background: linear-gradient(135deg, #9b2f2f, #cf4b4b); }
+
+  /* Generic sign-up / confirm buttons */
+  .btn-primary {
+    width: 100%; padding: 12px; border: none;
+    border-radius: 10px; font: inherit; font-size: 14px;
+    font-weight: 600; cursor: pointer;
+    background: #6b8f78; color: #fff;
+    transition: background .15s;
+  }
+  .btn-primary:hover { background: #527a65; }
+  .btn-secondary {
+    background: transparent; border: 1px solid #ddd6cc;
+    border-radius: 10px; padding: 8px 14px;
+    font: inherit; font-size: 13px; cursor: pointer;
+    color: #6b5e52; margin-top: 8px;
+  }
+  .btn-secondary:hover { background: #f7f4ef; }
+
+  .success { color: #2f6d43; margin-top: 10px; font-weight: 700; font-family: system-ui, sans-serif; font-size: 13px; }
+  .error   { color: #9b2f2f; margin-top: 10px; font-weight: 700; font-family: system-ui, sans-serif; font-size: 13px; }
+
+  @media (max-width: 720px) {
+    .page-header { padding: 14px 18px; flex-direction: column; }
+    .grid { grid-template-columns: 1fr; }
+    #step-signup { padding: 22px; }
+  }
+</style>
+</head>
+<body>
+
+  <div class="page-header">
+    <h1>Nurse<span>Assist</span> &nbsp;—&nbsp; Patient Portal</h1>
+    <nav>
+      UAlbany General Hospital &nbsp;·&nbsp;
+      <a href="nurse.html">Nurse View →</a> &nbsp;·&nbsp;
+      <a href="index.html">Admin View →</a>
+    </nav>
+  </div>
+
+<main>
+
+  <!-- ── Step 1: Sign up for your room ── -->
+  <div id="step-signup">
+    <h2>Welcome to NurseAssist</h2>
+    <p>Enter your name and select your room to get started. You'll then be able to send requests directly to your care team.</p>
+
+    <div class="field">
+      <label for="patientName">Your name</label>
+      <input type="text" id="patientName" placeholder="e.g. John Smith" autocomplete="name"/>
+    </div>
+    <div class="field">
+      <label for="roomSelect">Your room</label>
+      <select id="roomSelect">
+        <option value="">— Select your room —</option>
+        <option value="Room 401">Room 401</option>
+        <option value="Room 402">Room 402</option>
+        <option value="Room 403">Room 403</option>
+        <option value="Room 404">Room 404</option>
+        <option value="Room 405">Room 405</option>
+        <option value="Room 406">Room 406</option>
+        <option value="Room 407">Room 407</option>
+        <option value="Room 408">Room 408</option>
+        <option value="Room 409">Room 409</option>
+        <option value="Room 410">Room 410</option>
+        <option value="Room 411">Room 411</option>
+        <option value="Room 412">Room 412</option>
+        <option value="Room 413">Room 413</option>
+        <option value="Room 414">Room 414</option>
+        <option value="Room 415">Room 415</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="bedSelect">Bed</label>
+      <select id="bedSelect">
+        <option value="A">Bed A (window)</option>
+        <option value="B">Bed B (door)</option>
+      </select>
+    </div>
+
+    <button class="btn-primary" onclick="registerPatient()">Check in →</button>
+    <p class="error" id="signupError" style="display:none"></p>
+  </div>
+
+  <!-- ── Step 2: Send requests ── -->
+  <div id="step-request">
+    <div class="hero">
+      <h1>Request help from your care team.</h1>
+      <p class="lead">Choose the type of assistance you need. Your request goes straight to the nurse task pool.</p>
+      <span class="patient-tag" id="patientTag"></span>
+    </div>
+
+    <div class="grid">
+      <!-- Left: notes + status -->
+      <div class="card">
+        <div class="card-body">
+          <p class="section-title">Your Message (optional)</p>
+          <div class="field">
+            <label for="notes">Additional details</label>
+            <textarea id="notes" placeholder="Add any details that might help your nurse."></textarea>
+          </div>
+          <div class="status-box" id="statusBox">
+            <strong>Status:</strong> No request sent yet.
+          </div>
+          <p class="success" id="successMsg" style="display:none"></p>
+          <p class="error"   id="errorMsg"   style="display:none"></p>
+          <br>
+          <button class="btn-secondary" onclick="signOut()">← Change room / name</button>
+        </div>
+      </div>
+
+      <!-- Right: request buttons -->
+      <div class="card">
+        <div class="card-body">
+          <p class="section-title">Request Assistance</p>
+          <div class="actions">
+            <button class="req-btn routine" onclick="sendRequest('non-emergency','Water / Ice','Patient is requesting water or ice.')">
+              Water / Ice
+              <span class="hint">Routine comfort request</span>
+            </button>
+            <button class="req-btn routine" onclick="sendRequest('non-emergency','Bathroom Assistance','Patient needs help getting to the bathroom.')">
+              Bathroom Assistance
+              <span class="hint">Help moving safely</span>
+            </button>
+            <button class="req-btn routine" onclick="sendRequest('non-emergency','Blanket / Pillow','Patient is requesting an extra blanket or pillow.')">
+              Blanket / Pillow
+              <span class="hint">Comfort item request</span>
+            </button>
+            <button class="req-btn timed" onclick="sendRequest('time-sensitive','Pain Medication','Patient is reporting pain and requesting medication review.')">
+              Pain Medication
+              <span class="hint">Time-sensitive nurse review</span>
+            </button>
+            <button class="req-btn timed" onclick="sendRequest('time-sensitive','Nausea / Discomfort','Patient is reporting nausea or general discomfort.')">
+              Nausea / Discomfort
+              <span class="hint">Nurse assessment needed</span>
+            </button>
+            <button class="req-btn emergency" onclick="sendRequest('medical-emergency','Urgent Help Needed','Patient requested urgent assistance from staff.')">
+              🚨 Urgent Help
+              <span class="hint">Emergency staff response</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<script>
+const BASE = "/api";
+let patient = null; // {name, room, bed}
+
+/* ── Restore session ── */
+window.addEventListener("DOMContentLoaded", () => {
+  const saved = sessionStorage.getItem("patient");
+  if (saved) {
+    patient = JSON.parse(saved);
+    showRequestStep();
+  }
+});
+
+/* ── Step 1: Register ── */
+async function registerPatient() {
+  const name = document.getElementById("patientName").value.trim();
+  const room = document.getElementById("roomSelect").value;
+  const bed  = document.getElementById("bedSelect").value;
+  const err  = document.getElementById("signupError");
+
+  err.style.display = "none";
+
+  if (!name) { err.textContent = "Please enter your name."; err.style.display = "block"; return; }
+  if (!room) { err.textContent = "Please select your room."; err.style.display = "block"; return; }
+
+  //Register with server (best-effort — proceeds even if server is down)
+  try {
+    await fetch(`${BASE}/patients/register`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, room, bed })
+    });
+  } catch(e) { /* offline — continue with local session */ }
+
+  patient = { name, room, bed };
+  sessionStorage.setItem("patient", JSON.stringify(patient));
+  showRequestStep();
+}
+
+function showRequestStep() {
+  document.getElementById("step-signup").style.display  = "none";
+  document.getElementById("step-request").style.display = "block";
+  document.getElementById("patientTag").textContent =
+    `${patient.name} · ${patient.room}, Bed ${patient.bed}`;
+}
+
+function signOut() {
+  sessionStorage.removeItem("patient");
+  patient = null;
+  document.getElementById("step-signup").style.display  = "block";
+  document.getElementById("step-request").style.display = "none";
+  document.getElementById("signupError").style.display  = "none";
+  document.getElementById("patientName").value = "";
+  document.getElementById("roomSelect").value  = "";
+}
+
+/* ── Step 2: Send request ── */
+function setMsg(type, text) {
+  const s = document.getElementById("successMsg");
+  const e = document.getElementById("errorMsg");
+  s.style.display = e.style.display = "none";
+  if (!text) return;
+  if (type === "success") { s.textContent = text; s.style.display = "block"; }
+  else                    { e.textContent = text; e.style.display = "block"; }
+}
+
+function setBtnsDisabled(disabled) {
+  document.querySelectorAll(".req-btn").forEach(b => b.disabled = disabled);
+}
+
+async function sendRequest(type, title, defaultDesc) {
+  if (!patient) return;
+
+  const notes  = document.getElementById("notes").value.trim();
+  const status = document.getElementById("statusBox");
+
+  setMsg(null, "");
+
+  const description = notes
+    ? `${defaultDesc} Patient note: ${notes}`
+    : defaultDesc;
+
+  try {
+    setBtnsDisabled(true);
+    status.innerHTML = `<strong>Status:</strong> Sending "${title}" request…`;
+
+    const res = await fetch(`${BASE}/tasks`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        type,
+        room:        patient.room,
+        title,
+        description,
+        patientName: patient.name   // ← attached so nurse view can show who submitted
+      })
+    });
+
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data.error || `Server error ${res.status}`);
+    }
+
+    status.innerHTML = `<strong>Status:</strong> ✓ "${title}" request sent for ${patient.room}.`;
+    document.getElementById("notes").value = "";
+    setMsg("success", "Your request was sent to the nurse task pool.");
+  } catch(err) {
+    status.innerHTML = `<strong>Status:</strong> Request was not sent.`;
+    setMsg("error", err.message || "Unable to send request. Please try again.");
+  } finally {
+    setBtnsDisabled(false);
+  }
+}
+</script>
+</body>
+</html>
